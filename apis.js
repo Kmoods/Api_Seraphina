@@ -191,11 +191,40 @@ function gerarCPF() {
   return cpf.join("");
 }
 
+// Função utilitária para verificar se a chave é de admin
+async function isAdminKey(apikey) {
+  const usuario = await buscarUsuarioPorChave(apikey);
+  return usuario && usuario.plano === "admin";
+}
+
+if (!apikey || !(await isAdminKey(apikey))) {
+  return res.status(403).json({ error: "Acesso restrito a administradores." });
+}
+
+// Exemplo de rota protegida para admin
+router.get("/api/rota-admin-", async (req, res) => {
+  const apikey = req.query.apikey;
+  if (!apikey || !(await isAdminKey(apikey))) {
+    return res.status(403).json({ error: "Acesso restrito a administradores." });
+  }
+  res.json({ message: "Bem-vindo, admin!" });
+});
+
 // --- Suas rotas de API que usam arquivos JSON para imagens, frases, etc, permanecem iguais ---
 
 // Exemplo de rota protegida por apikey usando banco:
 const API_SECRET = process.env.API_SECRET || "@$@##*&!KMODS2025!@#@001a" ; // MESMA chave do Python!
 const ultimasRequisicoes = {}; // cooldown por apikey
+
+const { exec } = require("child_process");
+
+// Ajuste o caminho conforme sua estrutura
+const DOWNLOADS_DIR = path.join(__dirname, "downloads");
+const SESSION_DIR = path.join(__dirname, "session");
+
+// Garante que as pastas existem
+if (!fs.existsSync(DOWNLOADS_DIR)) fs.mkdirSync(DOWNLOADS_DIR);
+if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR);
 
 router.get("/api/playAudio", async (req, res) => {
   const apikey = req.query.apikey;
@@ -228,26 +257,27 @@ router.get("/api/playAudio", async (req, res) => {
   }
 
   try {
-    console.log("🎵 Baixando áudio de:", videoUrl);
+    const fileId = Date.now() + "_" + Math.floor(Math.random() * 10000);
+    const outputPath = path.join(DOWNLOADS_DIR, `${fileId}.mp3`);
+    const cmd = `yt-dlp --extract-audio --audio-format mp3 --cookies-from-browser chrome:${SESSION_DIR} -o "${outputPath}" "${videoUrl}"`;
 
-    // Chama o microserviço Python
-    const response = await axios.post(
-      "https://youtube-python-seraphinaapi.onrender.com/baixar-audio",
-      { url: videoUrl },
-      {
-        responseType: "stream",
-        headers: {
-          "X-API-SECRET": API_SECRET
-        }
+    exec(cmd, async (err, stdout, stderr) => {
+      if (err || !fs.existsSync(outputPath)) {
+        console.error("Erro ao baixar áudio:", stderr || err);
+        return res.status(500).json({ error: "Erro ao baixar áudio." });
       }
-    );
 
-    res.setHeader("Content-Disposition", 'attachment; filename="audio.mp3"');
-    res.setHeader("Content-Type", "audio/mpeg");
-    response.data.pipe(res);
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Disposition", 'attachment; filename="audio.mp3"');
+      const stream = fs.createReadStream(outputPath);
+      stream.pipe(res);
 
+      stream.on("close", () => {
+        fs.unlink(outputPath, () => {});
+      });
+    });
   } catch (error) {
-    console.error("❌ Erro ao baixar áudio via Python:", error.message);
+    console.error("❌ Erro geral:", error.message);
     return res.status(500).json({ error: "Erro ao processar o áudio." });
   }
 });

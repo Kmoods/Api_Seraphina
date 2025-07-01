@@ -86,6 +86,10 @@
     </table>
   </div>
 
+    <div id="statusEndpoints" style="margin-top:30px;">
+    <h3>Status dos Endpoints</h3>
+    <ul id="listaStatus"></ul>
+  </div>
   <script>
    async function verificarSenha() {
   const senha = document.getElementById("senhaAdm").value.trim();
@@ -201,65 +205,39 @@ async function carregarUsuarios() {
   }
 }
 
+async function checarStatusEndpoints() {
+const key = "admin-2025-@KMODS!@#superkey"
+  const endpoints = [
+    { nome: "Imagem Aleatória", url: `https://apiseraphina.onrender.com/api/imagem-aleatoria?apikey=${key}` },
+    { nome: "Frase Aleatória", url: `https://apiseraphina.onrender.com/api/frase-aleatoria?apikey=${key}` },
+    { nome: "Play Audio", url: `https://apiseraphina.onrender.com/api/playAudio?apikey=${key}&url=https://www.youtube.com/watch?v=dQw4w9WgXcQ` }
+    // Adicione outros endpoints que quiser monitorar
+  ];
 
-    async function carregarPedidos() {
-      const container = document.getElementById("pedidos-codigos");
-      container.innerHTML = "Carregando...";
+  const lista = document.getElementById("listaStatus");
+  lista.innerHTML = "";
 
-      try {
-        const res = await fetch("https://apiseraphina.onrender.com/api/pedidos-codigos");
-        const pedidos = await res.json();
-
-        if (!Object.keys(pedidos).length) {
-          container.innerHTML = "<p>Nenhum pedido pendente.</p>";
-          return;
-        }
-
-        container.innerHTML = "";
-
-        for (const numero in pedidos) {
-          const pedido = pedidos[numero];
-          const btnEnviar = document.createElement("button");
-
-          btnEnviar.textContent = "Enviar código via WhatsApp";
-          btnEnviar.className = "btn-enviar";
-          btnEnviar.onclick = async () => {
-            const mensagem = `🔐 NOVO PEDIDO DE PLANO\n\n📱 Número: ${numero}\n📦 Plano: ${pedido.plano.toUpperCase()}\n💰 Valor: R$ ${pedido.valor}\n🔑 Código: ${pedido.codigo}`;
-
-            window.open(`https://wa.me/55${numero}?text=${encodeURIComponent(mensagem)}`, "_blank");
-
-            await fetch("https://apiseraphina.onrender.com/api/enviar-codigo", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ numero })
-            });
-
-            alert("Código marcado como enviado.");
-            carregarPedidos();
-          };
-
-          const div = document.createElement("div");
-          div.innerHTML = `
-            <p><strong>Número:</strong> ${numero}</p>
-            <p><strong>Plano:</strong> ${pedido.plano}</p>
-            <p><strong>Valor:</strong> R$ ${pedido.valor}</p>
-            <p><strong>Código:</strong> ${pedido.codigo}</p>
-          `;
-          div.appendChild(btnEnviar);
-          container.appendChild(div);
-          container.appendChild(document.createElement("hr"));
-        }
-      } catch (err) {
-        container.innerHTML = "<p>Erro ao carregar pedidos.</p>";
-      }
+  for (const ep of endpoints) {
+    let status = "offline";
+    try {
+      const res = await fetch(ep.url, { method: "GET" });
+      status = res.ok ? "online" : "offline";
+    } catch {
+      status = "offline";
     }
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${ep.nome}:</strong> <span style="color:${status === "online" ? "limegreen" : "red"}">${status}</span>`;
+    lista.appendChild(li);
+  }
+}
 
-    window.onload = () => {
+        window.onload = () => {
       if (localStorage.getItem("admin_auth") === "ok") {
         document.getElementById("loginForm").style.display = "none";
         document.getElementById("adminContent").style.display = "block";
         carregarUsuarios();
         carregarPedidos();
+        checarStatusEndpoints(); // <-- aqui!
       }
     };
   </script>

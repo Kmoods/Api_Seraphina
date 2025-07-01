@@ -36,10 +36,25 @@ async function buscarUsuarioPorChave(chave) {
   await db.close();
   return usuario;
 }
+// ...existing code...
+
+async function criarUsuarioAdmin() {
+  const usuario = {
+    numero: "admin",
+    chave: "admin-2025-@KMODS!@#superkey", // Troque pela sua chave desejada
+    plano: "admin",
+    limite: 999999999999999,
+    requisicoes: 0,
+    token: "admintoken"
+  };
+  await salvarUsuario(usuario);
+  console.log("Usuário admin criado/atualizado com sucesso!");
+}
 
 module.exports = {
   carregarUsuarios,
   salvarUsuario,
   deletarUsuarioPorChave,
-  buscarUsuarioPorChave
+  buscarUsuarioPorChave,
+  criarUsuarioAdmin // <-- exportando a função nova
 };
