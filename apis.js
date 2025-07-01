@@ -197,13 +197,14 @@ async function isAdminKey(apikey) {
   return usuario && usuario.plano === "admin";
 }
 
-if (!apikey || !(await isAdminKey(apikey))) {
-  return res.status(403).json({ error: "Acesso restrito a administradores." });
-}
+
 
 // Exemplo de rota protegida para admin
 router.get("/api/rota-admin-", async (req, res) => {
   const apikey = req.query.apikey;
+  if (!apikey || !(await isAdminKey(apikey))) {
+  return res.status(403).json({ error: "Acesso restrito a administradores." });
+}
   if (!apikey || !(await isAdminKey(apikey))) {
     return res.status(403).json({ error: "Acesso restrito a administradores." });
   }
