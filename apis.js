@@ -219,8 +219,8 @@ const ultimasRequisicoes = {}; // cooldown por apikey
 const { exec } = require("child_process");
 
 // Ajuste o caminho conforme sua estrutura
-const DOWNLOADS_DIR = path.join(__dirname, "downloads");
-const SESSION_DIR = path.join(__dirname, "session");
+const DOWNLOADS_DIR = path.join(__dirname, "dados", "downloads");
+const SESSION_DIR = path.join(__dirname,"dados", "session");
 
 // Garante que as pastas existem
 if (!fs.existsSync(DOWNLOADS_DIR)) fs.mkdirSync(DOWNLOADS_DIR);
